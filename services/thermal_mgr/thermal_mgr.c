@@ -48,21 +48,25 @@ error_code_t thermalMgrSendEvent(thermal_mgr_event_t *event) {
 }
 
 void osHandlerLM75BD(void) {
-  float temp;
-  readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp);
-  if (temp > 75) overTemperatureDetected();
-  else safeOperatingConditions();
+  thermal_mgr_event_t event; event.type = THERMAL_MGR_EVENT_ISR_OVERTEMP_CHECK;
+  xQueueSend(thermalMgrQueueHandle, &event, portMAX_DELAY);
+  
 }
 
 static void thermalMgr(void *pvParameters) {
   /* Implement this task */
-  lm75bd_config_t * data = (void *) pvParameters;
+  lm75bd_config_t *config = (void *) pvParameters;
   thermal_mgr_event_t event;
   while (1) {
     if (xQueueReceive(thermalMgrQueueHandle, &event, portMAX_DELAY) == pdTRUE) {
       float temp;
       readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp);
-      addTemperatureTelemetry(temp);
+      if (event.type == THERMAL_MGR_EVENT_ISR_OVERTEMP_CHECK){
+          if (temp > 75) overTemperatureDetected();
+          else safeOperatingConditions();
+      } else {
+        addTemperatureTelemetry(temp);
+      }
     }
   }
 }

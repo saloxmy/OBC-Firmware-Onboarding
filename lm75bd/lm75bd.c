@@ -32,17 +32,17 @@ error_code_t readTempLM75BD(uint8_t devAddr, float *temp) {
   uint8_t addr = 0x0U;
   i2cSendTo(devAddr, &addr, 1);
 
-  i2cReceiveFrom(devAddr, buf, 2);
+  i2cReceiveFrom(devAddr, buf, sizeof(buf));
 
   uint8_t b1 = buf[0];
   uint8_t b2 = buf[1];
 
   uint16_t result = ((b1 << 8) | b2) >> 5 ;
   
-    if (result & 0x0400) {
+     if (result & 0x0400) { 
         result = ~(result | 0xF800) + 1;
         *temp = result * -0.125;
-    } else *temp = result * 0.125;
+     } else *temp = result * 0.125;
 
   return ERR_CODE_SUCCESS;
 }
