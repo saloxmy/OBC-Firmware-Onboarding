@@ -42,19 +42,28 @@ void initThermalSystemManager(lm75bd_config_t *config) {
 }
 
 error_code_t thermalMgrSendEvent(thermal_mgr_event_t *event) {
-  /* Send an event to the thermal manager queue */
+  xQueueSend(thermalMgrQueueHandle, event, portMAX_DELAY);
 
   return ERR_CODE_SUCCESS;
 }
 
 void osHandlerLM75BD(void) {
-  /* Implement this function */
+  float temp;
+  readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp);
+  if (temp > 75) overTemperatureDetected();
+  else safeOperatingConditions();
 }
 
 static void thermalMgr(void *pvParameters) {
   /* Implement this task */
+  lm75bd_config_t * data = (void *) pvParameters;
+  thermal_mgr_event_t event;
   while (1) {
-    
+    if (xQueueReceive(thermalMgrQueueHandle, &event, portMAX_DELAY) == pdTRUE) {
+      float temp;
+      readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp);
+      addTemperatureTelemetry(temp);
+    }
   }
 }
 
