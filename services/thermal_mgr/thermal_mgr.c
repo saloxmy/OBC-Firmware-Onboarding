@@ -42,15 +42,18 @@ void initThermalSystemManager(lm75bd_config_t *config) {
 }
 
 error_code_t thermalMgrSendEvent(thermal_mgr_event_t *event) {
-  xQueueSend(thermalMgrQueueHandle, event, portMAX_DELAY);
+  if(event == NULL) return ERR_CODE_INVALID_ARG;
+  if(thermalMgrQueueHandle == NULL) return ERR_CODE_INVALID_STATE;
+
+  if(xQueueSend(thermalMgrQueueHandle, event, 0)) return ERR_CODE_QUEUE_FULL;
 
   return ERR_CODE_SUCCESS;
 }
 
 void osHandlerLM75BD(void) {
-  thermal_mgr_event_t event; event.type = THERMAL_MGR_EVENT_ISR_OVERTEMP_CHECK;
-  xQueueSend(thermalMgrQueueHandle, &event, portMAX_DELAY);
-  
+  thermal_mgr_event_t event = {.type = THERMAL_MGR_EVENT_ISR_OVERTEMP_CHECK};
+  thermalMgrSendEvent(&event);
+
 }
 
 static void thermalMgr(void *pvParameters) {
@@ -59,6 +62,9 @@ static void thermalMgr(void *pvParameters) {
   thermal_mgr_event_t event;
   while (1) {
     if (xQueueReceive(thermalMgrQueueHandle, &event, portMAX_DELAY) == pdTRUE) {
+      if (event.type != THERMAL_MGR_EVENT_MEASURE_TEMP_CMD 
+       && event.type != THERMAL_MGR_EVENT_ISR_OVERTEMP_CHECK) continue;
+      
       float temp;
       readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp);
       if (event.type == THERMAL_MGR_EVENT_ISR_OVERTEMP_CHECK){
