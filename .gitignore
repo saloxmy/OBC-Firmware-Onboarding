@@ -2,7 +2,7 @@
 *.d
 
 # Shell scripts
-.sh
+*.sh
 
 # Object files
 *.o
