@@ -66,13 +66,13 @@ static void thermalMgr(void *pvParameters) {
       if (event.type != THERMAL_MGR_EVENT_MEASURE_TEMP_CMD 
        && event.type != THERMAL_MGR_EVENT_ISR_OVERTEMP_CHECK){
         LOG_ERROR_CODE(ERR_CODE_INVALID_STATE);
-        return;
+        continue;
       }
       
       float temp;
       LOG_IF_ERROR_CODE(readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp));
 
-      if (errCode != ERR_CODE_SUCCESS) return;
+      if (errCode != ERR_CODE_SUCCESS) continue;
 
       if (event.type == THERMAL_MGR_EVENT_ISR_OVERTEMP_CHECK){
           if (temp > 75) overTemperatureDetected();
